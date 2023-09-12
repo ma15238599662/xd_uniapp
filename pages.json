@@ -1,0 +1,197 @@
+{
+  "pages": [{
+    "path": "pages/tabbar/index/index",
+    "style": {
+      "navigationBarTitleText": "首页",
+      "app-plus": {
+        "titleNView": false
+      },
+      "enablePullDownRefresh": false
+
+    }
+
+  }, {
+    "path": "pages/tabbar/vicinity/vicinity",
+    "style": {
+      "navigationBarTitleText": "周边服务",
+      "enablePullDownRefresh": false,
+      "backgroundColorTop": "#FFFFFF",
+      "backgroundColorBottom": "#FFFFFF",
+      "backgroundColor": "#FFFFFE",
+      "mp-alipay": {
+        "allowsBounceVertical": "YES"
+      }
+    }
+
+  }, {
+    "path": "pages/tabbar/reservation/reservation",
+    "style": {
+      "navigationBarTitleText": "预约服务",
+      "enablePullDownRefresh": false,
+      "backgroundColorTop": "#FFFFFF",
+      "backgroundColorBottom": "#FFFFFF",
+      "backgroundColor": "#FFFFFE",
+      "mp-alipay": {
+        "allowsBounceVertical": "YES"
+      }
+    }
+
+  }, {
+    "path": "pages/tabbar/my/my",
+    "style": {
+      "navigationBarTitleText": "我的",
+      "enablePullDownRefresh": true,
+      "backgroundColorTop": "#FFFFFF",
+      "backgroundColorBottom": "#FFFFFF",
+      "backgroundColor": "#FFFFFE",
+      "app-plus": {
+        "titleNView": false
+      }
+    }
+
+  }, {
+    "path": "pages/my/favorites/favorites",
+    "style": {
+      "navigationBarTitleText": "收藏夹",
+      "enablePullDownRefresh": true
+    }
+
+  }, {
+    "path": "pages/my/address/address",
+    "style": {
+      "navigationBarTitleText": "常用地址",
+      "enablePullDownRefresh": true
+    }
+
+  }, {
+    "path": "pages/my/historyRoute/historyRoute",
+    "style": {
+      "navigationBarTitleText": "历史路线",
+      "enablePullDownRefresh": true
+    }
+
+  }, {
+    "path": "pages/my/offMap/offMap",
+    "style": {
+      "navigationBarTitleText": "离线地图",
+      "enablePullDownRefresh": true
+    }
+
+  }, {
+    "path": "pages/my/shareLocation/shareLocation",
+    "style": {
+      "navigationBarTitleText": "位置共享",
+      "enablePullDownRefresh": true
+    }
+
+  }, {
+    "path": "pages/my/set/set",
+    "style": {
+      "navigationBarTitleText": "设置",
+      "enablePullDownRefresh": false
+    }
+
+  }, {
+    "path": "pages/logins/register/register",
+    "style": {
+      "navigationBarTitleText": "",
+      "enablePullDownRefresh": false
+    }
+
+  }, {
+    "path": "pages/logins/login/login",
+    "style": {
+      "navigationBarTitleText": "登录",
+      "enablePullDownRefresh": false,
+      "app-plus": {
+        "titleNView": false
+      }
+    }
+
+  }, {
+    "path": "pages/logins/forgotPassword/forgotPassword",
+    "style": {
+      "navigationBarTitleText": "忘记密码",
+      "enablePullDownRefresh": false
+    }
+
+  }, {
+    "path": "pages/logins/resetPassword/resetPassword",
+    "style": {
+      "navigationBarTitleText": "重置密码",
+      "enablePullDownRefresh": false
+    }
+
+  }, {
+    "path": "pages/my/personalInfo/personalInfo",
+    "style": {
+      "navigationBarTitleText": "个人信息",
+      "enablePullDownRefresh": false
+    }
+
+  }, {
+    "path": "pages/my/setNickname/setNickname",
+    "style": {
+      "enablePullDownRefresh": false,
+      "app-plus": {
+        "titleNView": false
+      }
+    }
+
+  }, {
+    "path": "pages/webview/webview",
+    "style": {
+      "navigationBarTitleText": "",
+      "enablePullDownRefresh": false,
+      "app-plus": {
+        "titleNView": false
+      }
+    }
+
+  }],
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "fui-(.*)": "@/components/firstui/fui-$1/fui-$1.vue"
+    }
+  },
+  "globalStyle": {
+    "backgroundTextStyle": "dark",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "First UI",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F1F4FA",
+    "backgroundColorTop": "#F1F4FA",
+    "backgroundColorBottom": "#F1F4FA"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#0066FF",
+    "backgroundColor": "#FFFFFF",
+    "list": [{
+        "pagePath": "pages/tabbar/index/index",
+        "text": "首页",
+        "iconPath": "static/images/tabbar/home.png",
+        "selectedIconPath": "static/images/tabbar/home_selected.png"
+      },
+      {
+        "pagePath": "pages/tabbar/vicinity/vicinity",
+        "text": "周边",
+        "iconPath": "static/images/tabbar/vicinity.png",
+        "selectedIconPath": "static/images/tabbar/vicinity_selected.png"
+      },
+      {
+        "pagePath": "pages/tabbar/reservation/reservation",
+        "text": "预约",
+        "iconPath": "static/images/tabbar/reservation.png",
+        "selectedIconPath": "static/images/tabbar/reservation_selected.png"
+      },
+      {
+        "pagePath": "pages/tabbar/my/my",
+        "text": "我的",
+        "iconPath": "static/images/tabbar/my.png",
+        "selectedIconPath": "static/images/tabbar/my_selected.png"
+      }
+    ]
+  }
+}

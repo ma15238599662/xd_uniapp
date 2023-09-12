@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <title>蜂鸟地图</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+  </head>
+
+  <body>
+    <div id="fengmap"></div>
+    <div class="test" style="position: absolute; top: 0; right: 0;">
+      <!-- <span onclick="test()">test</span> -->
+    </div>
+  </body>
+  <script type="text/javascript" src="./js/uni.webview.1.5.4.js"></script>
+  <!-- 引入fengmap -->
+  <!-- fengmap.map.min.js 地图核心模块必须第一个引入-->
+  <script src="../fengniao/sdk/fengmap.map.min.js"></script>
+  <script src="../fengniao/sdk/fengmap.analyser.min.js"></script>
+  <script src="../fengniao/sdk/fengmap.plugin.min.js"></script>
+  <script src="../fengniao/sdk/fengmap.effect.min.js"></script>
+  <script src="../fengniao/sdk/fengmap.plugins-compositemarker.min.js"></script>
+  <script src="../fengniao/sdk/fengmap.plugins-mapedit.min.js"></script>
+  <script src="../fengniao/sdk/fengmap.plugins-track-player.min.js"></script>
+  
+  <script>
+    var analyser;
+    var searchAnalyser; // 搜索分析对象
+    var routeAnalyser; // 路径分析对象
+    var floorInfos; // 楼层信息
+    var start; // 起点
+    var dest; // 终点
+    var startMarker, endMarker; // 起点终点图标
+    var lineMarker; // 路径线
+    var domMarker; // 设置起点  设置终点弹窗
+    var clickPoint; // 点击地图的点坐标
+    var mode = fengmap.FMNaviMode.MODULE_SHORTEST; // 最短路径
+    var priority = fengmap.FMNaviPriority.PRIORITY_LIFTFIRST; // 直梯优先
+    var activeInput; // 活跃的输入框id
+    var searchResult; // 搜索结果
+    var selectedIndex = -1; // 选中的搜索结果下标
+    var navi;
+    var map;
+    // 模拟导航相关参数
+    var simulateOptions = {
+        speed: 7,               // 模拟导航定位图标行进的速度, 单位m/s。默认7m/s。
+        followPosition: true,   // 模拟导航中在位置发生变化时, 地图是否跟随位置居中显示。默认true。
+        followAngle: false,     // 模拟导航中在方向发生变化时, 地图是否跟随方向变化, 保持路线朝向屏幕上方。 默认false。
+        changeTiltAngle: true,  // 模拟导航中楼层发生变化时是否改变地图的倾斜角度, 并执行动画。默认为true。
+        zoom: 21,               // 模拟导航开始时地图的显示缩放级别, 默认值为21, 表示1:282的地图比例尺。
+        maxZoom: 22,            // 模拟导航开始时地图的显示最大缩放级别, 默认值为22, 表示1:141的地图比例尺。防止视角过近。
+    };
+    // 地图初始化设置参数
+    
+    var options = {
+        container: document.getElementById('fengmap'),
+        appName: '蜂鸟研发SDK_2_0',
+        key: '57c7f309aca507497d028a9c00207cf8',
+        mapID: '1514920297309614082',
+        themeID: '1580453922356207618',
+        level: 1,
+        mapZoom: 18.5
+    }
+    // var options = {
+    //   container: document.getElementById('fengmap'),
+    //   appName: 'uniapp',
+    //   key: '300256ebc81040c4a9d7d7c930626bb3',
+    //   mapID: '1670616269829443585',
+    //   themeID: '1673626978418909185',
+    //   level: 1,
+    //   mapZoom: 19.5
+    // }
+    // 地图对象创建
+    map = new fengmap.FMMap(options);
+    map.on('loaded', function() {
+      floorInfos = map.getFloorInfos()
+      // 初始化路径分析类
+      routeAnalyser = new fengmap.FMNaviDriveAnalyser({
+        map: map
+      });
+      // 初始化导航分析类
+      analyser = new fengmap.FMNaviDriveAnalyser({ map: map }, function () {});
+
+      // 初始化搜索分析对象
+      var searchOption = {
+        mapID: options.mapID,
+        appName: options.appName,
+        key: options.key
+      }
+      searchAnalyser = new fengmap.FMSearchAnalyser(searchOption)
+
+    })
+    // 通过点击地图获取起点和终点
+    map.on('click', function(e) {
+
+      if (e.level) {
+        const model = e.targets.find(item => item.type === fengmap.FMType.MODEL)
+        if (model) {
+          clickPoint = {
+            level: e.level,
+            x: model.x,
+            y: model.y,
+            name: model.name
+          };
+          console.log(clickPoint)
+          showDomMarker(clickPoint)
+        }
+      }
+    })
+
+    // 地图点击回调
+    function mapClick(e) {
+      // UI.updateUI(e)
+      console.log(e)
+    }
+    // 点击设置初始化地图
+    function configChange(ops) {
+      if (map) {
+        map.dispose()
+      }
+      map = new fengmap.FMMap(ops);
+      map.on('click', mapClick)
+    }
+
+    // 显示选择起点终点的选项卡
+    function showDomMarker(position) {
+
+      if (domMarker) {
+        domMarker.remove()
+        domMarker = null;
+      }
+      domMarker = new fengmap.FMDomMarker({
+        x: position.x,
+        y: position.y,
+        domHeight: 80,
+        domWidth: 200,
+        anchor: fengmap.FMMarkerAnchor.BOTTOM,
+        content: `<div style=" display: inline-block; width: 200px; text-align: center;">
+            <div style="height: 50px;"></div>
+            <div style="background-image: url('./images/marker.png');display: inline-block; width: 32px; height: 32px;background-size:100%;"></div>
+        </div>`
+      });
+      var level = position.level
+      var floor = map.getFloor(level);
+      domMarker.addTo(floor);
+      console.log(floor)
+      var testdom = document.querySelector('.test')
+      testdom.innerHTML = `
+        <div style="display: flex;margin-bottom: 10px; border-radius: 6px; background-color: white; text-align: center;">
+            <span class="start_btn" style="flex: 1; height: 30px; color: white;padding: 10px 16px; line-height: 30px; background-color: #2F65EE; border-bottom-left-radius: 6px; border-top-left-radius:6px;" onclick=setStart()>起点</span>
+            <span class="end_btn" style="flex: 1; height: 30px; padding: 10px 16px; line-height: 30px;" onclick=setEnd()>终点</span>
+        </div>
+      `
+    }
+    // 设置起点图标和信息
+    function setStart() {
+      // 清除原来的起点图标
+      if (startMarker) {
+        startMarker.remove()
+      }
+      start = {
+        ...clickPoint
+      }
+      var marker = new fengmap.FMImageMarker({
+        url: './images/start.png',
+        x: clickPoint.x,
+        y: clickPoint.y,
+
+      });
+      var level = clickPoint.level
+      var floor = map.getFloor(level);
+      marker.addTo(floor);
+      startMarker = marker;
+      // 清除选项卡
+      domMarker?.remove();
+      domMarker = null
+      
+      var testdom = document.querySelector('.test')
+      testdom.innerHTML = ''
+      if (start && dest) {
+        naviAndDrawLine()
+      }
+      console.log(startMarker)
+    }
+    // 设置终点图标和信息
+    function setEnd() {
+      // 清除原来的终点图标
+      if (endMarker) {
+        endMarker.remove()
+      }
+      dest = {
+        ...clickPoint
+      }
+      var marker = new fengmap.FMImageMarker({
+        url: './images/end.png',
+        x: clickPoint.x,
+        y: clickPoint.y,
+
+      });
+      var level = clickPoint.level
+      var floor = map.getFloor(level);
+      marker.addTo(floor);
+      endMarker = marker
+      // 清除选项卡
+      domMarker?.remove();
+      domMarker = null
+      var testdom = document.querySelector('.test')
+      testdom.innerHTML = ''
+      if (start && dest) {
+        naviAndDrawLine()
+      }
+    }
+
+    // 分析路径，绘制路线
+    function naviAndDrawLine() {
+      if (!start || !dest) {
+        return;
+      }
+      if (lineMarker) {
+        lineMarker.remove()
+      }
+
+      const request = {
+        start,
+        dest,
+        mode,
+        priority
+      }
+      console.log(11111, request)
+      routeAnalyser.route(request, function(result) {
+
+        segments = [];
+        let subs = result.subs;
+        console.log(22222,subs);
+        var segment = new fengmap.FMSegment();
+        for (let index = 0; index < subs.length; index++) {
+          const leg = subs[index];
+          if (leg.levels[0] === leg.levels[1]) {
+            leg.waypoint.points.forEach(point => {
+              point.z = 0.5;
+            });
+            if (segment.points) {
+              let points = [];
+              points.push(...leg.waypoint.points);
+              points.splice(0, 1);
+              segment.points = segment.points.concat(points);
+            } else {
+              segment.points = leg.waypoint.points;
+            }
+            segment.level = leg.levels[0];
+            if (index == subs.length - 1) {
+              segments.push(segment);
+            }
+          } else {
+            segments.push(segment);
+            segment = new fengmap.FMSegment();
+          }
+
+        }
+        line = new fengmap.FMLineMarker({
+          segments: segments
+        })
+        line.addTo(map)
+        lineMarker = line
+        naviRoute()
+        // 开始模拟导航
+        navi.simulate(simulateOptions);
+        // 设置导航速度
+        navi.setSpeed(simulateOptions.speed);
+
+      }, function(value) {
+        console.log(value, start, dest);
+      })
+    }
+    
+    function naviRoute() {
+      navi = new fengmap.FMNavigationDrive({
+          map: map,
+          analyser: analyser,
+          locationMarkerUrl: 'https://developer.fengmap.com/fmAPI/images/bluedot-arrow.png',
+          locationMarkerSize: 48,
+          lineMarkerHeight: 0.5,
+          locationMarkerHeight: 0.5
+      });
+      // 清空导航类中的起始点标注, 定位标注及当前路线标注。
+      navi.clearAll();
+      // 设置起终点
+      navi.setStartPoint(start);
+      navi.setDestPoint(dest);
+      navi.route(
+          {
+              mode: mode,
+              priority: priority
+          },
+          function (result) {
+              // 导航分析成功回调
+              var line = navi.drawNaviLine();
+              // 自适应路线全览
+              navi.overview({
+                  ratio: 1.5
+              }, function () {
+                  console.log('自适应全览动画结束回调');
+              });
+          }, function (result) {
+              // 导航分析失败回调
+              console.log("failed", result);
+          }
+      );
+      
+      navi.on('driving', function (data) {
+        // console.log('driving', data)
+          /* 路线偏移逻辑 */
+          // var distance = data.distance;
+          // console.log('偏移距离：', distance,);
+      })
+      // 模拟导航结束事件, 真实导航不会触发该事件。需要开发者根据driving事件的返回内容, 进行业务处理。
+      navi.on('complete', function (data) {
+          console.log(`模拟导航结束！`)
+          // TODO: 导航结束转高德地图
+          postMes()
+          // clear()
+      })
+    }
+    
+
+    function clear() {
+      start = null;
+      dest = null;
+      navi.clearNaviLine()
+      navi.clearAll()
+      // if (lineMarker) {
+      //   lineMarker.remove()
+      // }
+      lineMarker = null
+      
+    }
+    function postMes() {
+      uni.webView.postMessage({
+        data: {
+        		type: 'h5',
+            msg: 'openAmp'
+        	},
+      });
+      
+      console.log('h5-postmsg')
+      
+    }
+    
+    // 设置底图
+    function SetTileLayerMode(type) {
+        if (tileLayer != null) {
+            tileLayer.remove(map);
+            tileLayer = null;
+        }
+        tileLayer = new fengmap.FMTileLayer({
+            mode: objType[type],
+            offset: 1.0,
+            replaceColor: "#FCF9F2", //大比例尺下，不显示瓦片底图时，显示的背景颜色
+            replaceOpacity: 0.9, //大比例尺下，不显示瓦片底图时，显示的背景颜色透明度
+        })
+        tileLayer.addTo(map);
+    }
+
+  </script>
+  <script>
+    let href = window.location.href
+    
+    console.log('h5', href)
+    // if (href)
+    
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'uniapp') {
+        // 处理收到的消息
+        console.log('message', event.data.data);
+        
+        // // 向uniapp回复消息（可选）
+        // event.source.postMessage({
+        //   type: 'responseType',
+        //   data: 'responseData'
+        // }, event.origin);
+      }
+    });
+    
+  </script>
+
+  <style>
+    html,
+    body,
+    #fengmap {
+      height: 100%;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+</html>

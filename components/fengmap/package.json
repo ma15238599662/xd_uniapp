@@ -1,0 +1,44 @@
+{
+  "_from": "fengmap",
+  "_id": "fengmap@3.1.2",
+  "_inBundle": false,
+  "_integrity": "sha512-l4qejusP2maN/Zhj8CBLG/9larYDv/XILNCL9GD16kTCjQBjo9YgzMAGRJdyWj6aGQhKDqkpezteGTbRAxQtcg==",
+  "_location": "/fengmap",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "fengmap",
+    "name": "fengmap",
+    "escapedName": "fengmap",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmmirror.com/fengmap/-/fengmap-3.1.2.tgz",
+  "_shasum": "67c86e73ff55c5512bf10fc547db5680c95c3782",
+  "_spec": "fengmap",
+  "_where": "/Users/ma/Desktop/work/FirstUI-Hello",
+  "author": {
+    "name": "fengmap"
+  },
+  "bundleDependencies": false,
+  "dependencies": {},
+  "deprecated": false,
+  "description": "A lightweight indoor 3D map develop toolkit",
+  "devDependencies": {},
+  "directories": {},
+  "keywords": [
+    "fengmap"
+  ],
+  "license": "ISC",
+  "main": "./build/fengmap.min.js",
+  "name": "fengmap",
+  "scripts": {},
+  "url": "https://www.fengmap.com",
+  "version": "3.1.2"
+}

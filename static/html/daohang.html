@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>车行真实导航</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <script src="https://developer.fengmap.com/fmAPI/demos/libs/js/fengmap.map.min.js"></script>
+    <script src="https://developer.fengmap.com/fmAPI/demos/libs/js/fengmap.analyser.min.js"></script>
+    <script src="https://developer.fengmap.com/fmAPI/demos/libs/js/fengmap.plugin.min.js"></script>
+    <script src="https://developer.fengmap.com/fmAPI/demos/libs/layui/layui.js"></script>
+    <script src="https://developer.fengmap.com/fmAPI/demos/libs/js/data.js"></script>
+    <link rel="stylesheet" href="https://developer.fengmap.com/fmAPI/demos/libs/layui/css/layui.css">
+    <link rel="stylesheet" href="https://developer.fengmap.com/fmAPI/demos/libs/css/font/iconfont.css">
+    <link rel="stylesheet" href="https://developer.fengmap.com/fmAPI/demos/libs/css/index.css">
+    <link rel="stylesheet" href="https://developer.fengmap.com/fmAPI/demos/libs/css/layui.css">
+    <link rel="stylesheet" href="https://developer.fengmap.com/fmAPI/demos/Navigation/driveRealNavi/css/index.css">
+</head>
+
+<body>
+    <div class="toolBarDiv">
+        <div class="control">
+            <button id="start" type="button" class="layui-btn" onclick="handleBtn('start')">开始导航</button>
+            <button id="stop" type="button" class="layui-btn" onclick="handleBtn('stop')">结束导航</button>
+        </div>
+    </div>
+    <div id="fengmap"></div>
+    <!-- 信息面板 -->
+    <div class="layui-panel panel">
+        <i class="icon iconfont icon-tishi"></i>
+        <span id="info">请点击开始导航</span>
+    </div>
+    <!-- 所属楼层 -->
+    <div class="layui-panel floor" id="floor"></div>
+</body>
+<script>
+    var map;
+    var navi;           // 导航对象
+    var analyser;       // 路径分析对象
+    var floorInfo;      // 楼层信息
+    var locationMarker; // 定位点marker
+    var offsetDis = 8;  // 路径偏移距离，超出该距离重新路线规划
+    var activeBtn;      // 选中按钮   
+    // 真实导航模拟起终点
+    var naviDriveRequest = {
+        start: {
+            x: driveNaviPoints[0].x,
+            y: driveNaviPoints[0].y,
+            level: driveNaviPoints[0].level,
+            height: 3,
+            url: 'https://developer.fengmap.com/fmAPI/images/start.png',
+            size: 32
+        },
+        dest: {
+            x: resetDriveNaviPoints[resetDriveNaviPoints.length - 1].x,
+            y: resetDriveNaviPoints[resetDriveNaviPoints.length - 1].y,
+            level: resetDriveNaviPoints[resetDriveNaviPoints.length - 1].level,
+            height: 3,
+            url: 'https://developer.fengmap.com/fmAPI/images/end.png',
+            size: 32
+        },
+        mode: fengmap.FMNaviMode.MODULE_SHORTEST,           // 导航中路径规划模式
+        priority: fengmap.FMNaviPriority.PRIORITY_DEFAULT   // 导航中的路线规划梯类优先级
+    };
+    var options = {
+        container: document.getElementById('fengmap'),
+        appName: '蜂鸟研发SDK_2_0',
+        key: '57c7f309aca507497d028a9c00207cf8',
+        mapID: '1514920297309614082',
+        themeID: '1580453922356207618',
+        level: 1,
+        mapZoom: 19,
+        visibleLevels: [1, 2, 3]
+    }
+    map = new fengmap.FMMap(options);
+    map.on('loaded', function () {
+        // 初始化导航分析类
+        analyser = new fengmap.FMNaviDriveAnalyser({ map: map }, function () {
+            // 初始化车行导航对象
+            navi = new fengmap.FMNavigationDrive({
+                map: map,
+                analyser: analyser,
+            });
+            // 根据起终点进行路径规划并绘制路径线
+            naviRoute();
+        });
+        // 添加定位点marker
+        locationMarker = new fengmap.FMLocationMarker({
+            x: driveNaviPoints[0].x,
+            y: driveNaviPoints[0].y,
+            url: 'https://developer.fengmap.com/fmAPI/images/bluedot-arrow.png',
+            level: driveNaviPoints[0].level,
+            size: 48,
+            height: 1,
+        })
+        locationMarker.addTo(map);
+        // 楼层信息
+        floorInfo = map.getFloorInfos();
+        console.log(111, map.getLevel());
+    })
+
+    /* 根据起终点进行路径规划并绘制路径线 */
+    function naviRoute() {
+        // 设置起终点
+        navi.setStartPoint(naviDriveRequest.start);
+        navi.setDestPoint(naviDriveRequest.dest);
+        // 导航分析
+        navi.route(
+            {
+                mode: naviDriveRequest.mode,
+                priority: naviDriveRequest.priority
+            },
+            function (result) {
+                // 导航分析成功回调
+                navi.drawNaviLine();
+            }, function (result) {
+                // 导航分析失败回调
+                console.log("failed", result);
+            }
+        );
+        navi.on('driving', function (data) {
+            // 更新locationMarker位置及角度
+            setLocationMakerPosition(data.point, data.angle);
+            // 更新路线信息
+            updateUI(data);
+            /* 路线偏移逻辑 */
+            var distance = data.distance;
+            console.log('偏移距离：', distance,);
+            if (distance > offsetDis) {
+                // 结束导航
+                realNaviStop();
+                // 路线重新规划
+                resetNaviRoute();
+            }
+        })
+        // 设置起点所在楼层
+        var startGname = getFloorNameByGid(naviDriveRequest.start.level);
+        var floorDom = document.getElementById('floor');
+        floorDom.innerHTML = startGname;
+    }
+
+    /* 导航按钮控制 */
+    function handleBtn(type) {
+        if (type === 'start') {
+            // 切换单楼层展示
+            map.setVisibleLevels([driveNaviPoints[0].level]);
+            map.setFitView(map.getBound());
+            // 开始导航
+            realNaviStart(driveNaviPoints, function (point) {
+                console.log('point', point);
+                if (point) {
+                    navi.locate(point);
+                } else {
+                    console.log('真实导航结束!');
+                }
+            });
+        } else if (type === 'stop') {
+            // 结束导航
+            realNaviStop();
+        }
+        // 更改btn选中
+        if (activeBtn) {
+            var activeDom = document.getElementById(activeBtn);
+            activeDom.classList.remove('layui-btn-primary');
+        }
+        var dom = document.getElementById(type);
+        dom.classList.add('layui-btn-primary');
+        activeBtn = type;
+    }
+
+    /* 设置定位标注点位置信息 */
+    function setLocationMakerPosition(coord, angle) {
+      console.log('方向111111====', angle)
+        if (angle) {
+          console.log('方向22222====', angle)
+            // 定位点方向始终与路径线保持平行
+            locationMarker.rotateTo({
+                heading: -angle,
+                duration: 0.5
+            });
+            // 第一人称需旋转地图角度
+            // map.setRotation({
+            //     animate: true,
+            //     duration: 0.5,
+            //     rotation: angle,
+            // })
+        }
+        // 更新locationMarker定位楼层
+        var level = locationMarker.level;
+        if (level !== coord.level) {
+            map.setLevel({
+                animate: true,
+                level: coord.level,
+            })
+        }
+        // 移动locationMarker
+        locationMarker.moveTo({
+            x: coord.x,
+            y: coord.y,
+            level: coord.level,
+            animate: true,
+            duration: 0.5,
+            finish: function () {
+                console.log('动画完成回调！');
+            }
+        });
+    }
+
+    /* 路线偏移，重新路径规划 */
+    function resetNaviRoute(params) {
+        console.log('路线偏移，重新进行路径规划！');
+        // 清空当前导航线
+        navi.clearNaviLine();
+
+        // 更新起点坐标
+        var newStart = {
+            x: resetDriveNaviPoints[0].x,
+            y: resetDriveNaviPoints[0].y,
+            level: resetDriveNaviPoints[0].level,
+            height: 3,
+            url: 'https://developer.fengmap.com/fmAPI/images/start.png',
+            size: 32
+        };
+        navi.setStartPoint(newStart);
+        navi.route(
+            {
+                mode: naviDriveRequest.mode,
+                priority: naviDriveRequest.priority
+            },
+            function (result) {
+                // 导航分析成功回调
+                navi.drawNaviLine();
+                // 将定位点更新到新的起点位置
+                setLocationMakerPosition(newStart);
+
+                setTimeout(() => {
+                    // 开始导航
+                    realNaviStart(resetDriveNaviPoints, function (point) {
+                        if (point) {
+                            navi.locate(point);
+                        } else {
+                            console.log('真实导航结束!');
+                        }
+                    });
+                }, 1000);
+            }, function (result) {
+                // 导航分析失败回调
+                console.log("failed", result);
+            }
+        )
+    }
+
+    /* 更新路线信息 */
+    function updateUI(data) {
+        // 获取导航过程路线信息
+        var instruction = navi.naviResult.subs[data.index].instruction.zh;
+        // 剩余距离
+        var remain = data.remain.toFixed(2);
+        var dom = document.getElementById('info');
+        dom.innerHTML = `${instruction}， 距离终点：${remain}米`;
+        // 获取楼层名称
+        var gname = getFloorNameByGid(data.level);
+        var floorDom = document.getElementById('floor');
+        floorDom.innerHTML = gname;
+    }
+
+    /* 根据楼层id获取楼层name */
+    function getFloorNameByGid(level) {
+        var gname = floorInfo.find(function (item) {
+            return item.level === level;
+        }).name;
+        return gname;
+    }
+</script>
+
+</html>
